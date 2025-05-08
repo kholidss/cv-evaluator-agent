@@ -2,7 +2,6 @@ from langchain_ollama import OllamaLLM
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
 
-# Inisialisasi LLM dari langchain_ollama
 llm = OllamaLLM(model="gemma")
 
 # Template prompt
@@ -25,6 +24,3 @@ Respond with YES or NO and give a brief reason.
 
 chain: RunnableSequence = prompt | llm
 
-# Contoh pemanggilan (opsional)
-# result = chain.invoke({"cv_text": "John Doe, Bachelor of Arts, 2 years as Customer Service..."})
-# print(result)
