@@ -27,5 +27,4 @@ def evaluate_cv(file_path: str, user_email: str) -> dict:
         # )
         return {"status": "passed", "result": result}
     else:
-        print("GA LOLOS BOS!")
         return {"status": "rejected", "result": result}

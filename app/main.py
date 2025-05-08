@@ -1,21 +1,29 @@
-from fastapi import FastAPI, UploadFile, Form
-import shutil
-import uuid
+from fastapi import FastAPI, UploadFile, Form, HTTPException
+from fastapi.responses import JSONResponse
+import tempfile
 import os
 from .processor import evaluate_cv
 
 app = FastAPI()
 
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 @app.post("/submit_cv/")
 async def submit_cv(file: UploadFile, email: str = Form(...)):
-    filename = f"{uuid.uuid4()}.pdf"
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=422, detail="File must be a PDF.")
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp.flush()
+        tmp_path = tmp.name
 
-    result = evaluate_cv(file_path, email)
-    return result
+    try:
+        result = evaluate_cv(tmp_path, email)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "failed", "reason": str(e)}
+        )
+    finally:
+        os.remove(tmp_path)
+
+    return JSONResponse(status_code=200, content=result)
