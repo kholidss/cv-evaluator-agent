@@ -1,5 +1,5 @@
 from langchain_ollama import OllamaLLM
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain_core.runnables import RunnableSequence
 from dataclasses import dataclass
 
@@ -30,22 +30,27 @@ class CVEvaluator:
 
     def set_prompt(self, type: str):
         if type == "train":
-            self.prompt = PromptTemplate(
-                    input_variables=["train_prompt"],
-                    template=   "{train_prompt}")
-        else:
-            self.prompt = PromptTemplate(
-                    input_variables=["cv_text"],
-                    template="""
-                        The following is a candidate's CV:
+            self.prompt = ChatPromptTemplate.from_messages([
+                HumanMessagePromptTemplate.from_template("{train_prompt}")
+            ])
+            return
 
-                        {cv_text}
+        self.prompt = ChatPromptTemplate.from_messages([
+                SystemMessagePromptTemplate.from_template(
+                    "You are a CV evaluation assistant."),
+                HumanMessagePromptTemplate.from_template("""
+                   The following is a candidate's CV:
 
-                        Please evaluate whether this candidate is suitable for the Software Engineer, Backend Engineer job position.
-                        Requirements:
-                        1. Minimum 2 year or more of working experience (only check year working experience, not year education experience)
-                        2. Must have included all of this skills (Golang, PHP)
-                        3. Must have attended education in Surabaya
+                    {cv_text}
 
-                        Respond with YES or NO and give a brief reason.
-                        """)
+                    Please evaluate whether this candidate is suitable for the Software Engineer, Backend Engineer job position.
+                    "Requirements":
+                    1. Minimum 1 year of total working experience (only check year working experience, not year education experience)
+                    2. Must have included all of this skills (Golang, Node JS)
+                    3. Must have attended education in Surabaya
+                    4. Don't check the education level major or years graduation
+
+                    Respond with YES or NO and give a brief reason.
+                    """)
+                    ])
+            
