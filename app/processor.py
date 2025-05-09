@@ -1,5 +1,5 @@
 import pdfplumber
-from .llm_agent import chain
+from .llm_agent import CVEvaluator
 from .emailer import send_email
 
 def extract_text_from_pdf(file_path: str) -> str:
@@ -17,7 +17,9 @@ def evaluate_cv(file_path: str, user_email: str) -> dict:
         return {"status": "failed", "reason": "Could not extract text from PDF"}
 
     # FIXED: input to chain must be a dict
-    result = chain.invoke({"cv_text": cv_text})
+    evaluator = CVEvaluator()
+    print(cv_text)
+    result = evaluator.evaluate({"cv_text": cv_text})
 
     if "YES" in result.upper():
         # send_email(

@@ -7,7 +7,7 @@ from .processor import evaluate_cv
 app = FastAPI()
 
 @app.post("/submit_cv/")
-async def submit_cv(file: UploadFile, email: str = Form(...)):
+async def submit_cv(file: UploadFile = Form(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=422, detail="File must be a PDF.")
 
@@ -17,7 +17,7 @@ async def submit_cv(file: UploadFile, email: str = Form(...)):
         tmp_path = tmp.name
 
     try:
-        result = evaluate_cv(tmp_path, email)
+        result = evaluate_cv(tmp_path, "email")
     except Exception as e:
         return JSONResponse(
             status_code=500,
