@@ -1,8 +1,9 @@
 import pdfplumber
-from .llm_agent import CVEvaluator
+from .llm_agent import CVEvaluator, ParamCVEvaluatorEvaluate
 from .emailer import send_email
 
 def extract_text_from_pdf(file_path: str) -> str:
+    print("file_path ===>> ", file_path)
     text = ""
     with pdfplumber.open(file_path) as pdf:
         for page in pdf.pages:
@@ -12,14 +13,12 @@ def extract_text_from_pdf(file_path: str) -> str:
     return text.strip()
 
 def evaluate_cv(file_path: str, user_email: str) -> dict:
-    cv_text = extract_text_from_pdf(file_path)
-    if not cv_text:
+    extracted_pdf = extract_text_from_pdf(file_path)
+    if not extracted_pdf:
         return {"status": "failed", "reason": "Could not extract text from PDF"}
 
-    # FIXED: input to chain must be a dict
     evaluator = CVEvaluator()
-    print(cv_text)
-    result = evaluator.evaluate({"cv_text": cv_text})
+    result = evaluator.evaluate(ParamCVEvaluatorEvaluate(cv_text=extracted_pdf))
 
     if "YES" in result.upper():
         # send_email(

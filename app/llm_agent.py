@@ -1,7 +1,11 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
+from dataclasses import dataclass
 
+@dataclass
+class ParamCVEvaluatorEvaluate:
+    cv_text: str
 
 class CVEvaluator:
     def __init__(self, model_name: str = "gemma3:1b"):
@@ -17,12 +21,14 @@ Please evaluate whether this candidate is suitable for the 'Software Engineer' o
 Requirements:
 - Minimum 1 year of experience (if more, consider as pass at this point)
 - Must have Golang skills (if more, consider as pass at this point)
-- Must have attended education in Manado
+- Must have attended education in Indonesia
 
 Respond with YES or NO and give a brief reason.
 """
         )
         self.chain: RunnableSequence = self.prompt | self.llm
 
-    def evaluate(self, cv_text: dict) -> str:
-        return self.chain.invoke(cv_text["cv_text"])
+    def evaluate(self, param: ParamCVEvaluatorEvaluate) -> str:
+        return self.chain.invoke({
+            "cv_text": param.cv_text
+        })
