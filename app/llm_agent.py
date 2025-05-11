@@ -15,11 +15,13 @@ class CVEvaluator:
     def __init__(self, model_name: str = "gemma3:1b"):
         self.llm = OllamaLLM(model=model_name)
         self.prompt = PromptTemplate
+        self.evaluation_prompt = """Respond with "YES" or "NO" and give a brief reason."""
 
     def evaluate(self, param: ParamAgentCVEvaluatorEvaluate) -> str:
         chain: RunnableSequence = self.prompt | self.llm
         return chain.invoke({
-            "cv_text": param.cv_text
+            "cv_text": param.cv_text,
+            "evaluation_prompt": self.evaluation_prompt
         })
     
     def train(self, param: ParamAgentCVEvaluatorTrain) -> str:
@@ -28,12 +30,15 @@ class CVEvaluator:
             "train_prompt": param.train_prompt
     })
 
-    def set_prompt(self, type: str):
+    def set_prompt(self, type: str, evaluation_schema: str = ""):
         if type == "train":
             self.prompt = ChatPromptTemplate.from_messages([
                 HumanMessagePromptTemplate.from_template("{train_prompt}")
             ])
             return
+
+        if evaluation_schema == "score":
+            self.evaluation_prompt = """Respond begin with "SCORE:0-100" based on the Requirement Points and give a brief reason."""
 
         self.prompt = ChatPromptTemplate.from_messages([
                 SystemMessagePromptTemplate.from_template(
@@ -43,14 +48,14 @@ class CVEvaluator:
 
                     {cv_text}
 
-                    Please evaluate whether this candidate is suitable for the Software Engineer, Backend Engineer job position.
+                    Please evaluate whether this candidate is suitable or relate for the Software Engineer, Backend Engineer job position.
                     "Requirements":
-                    1. Minimum 1 year of total working experience (only check year working experience, not year education experience)
+                    1. Candidate must have a minimum of 2 years of total working experience or more. If the candidate has less than 2 years, they should be automatically considered NOT suitable, regardless of other criteria.
                     2. Must have included all of this skills (Golang, Node JS)
-                    3. Must have attended education in Surabaya
+                    3. Must have attended education in Manado
                     4. Don't check the education level major or years graduation
 
-                    Respond with YES or NO and give a brief reason.
+                    {evaluation_prompt}
                     """)
                     ])
             

@@ -8,6 +8,7 @@ from fastapi import UploadFile, BackgroundTasks
 import asyncio
 from typing import Optional
 from .llm_train import FineTuningTrainer
+import re
 
 def extract_text_from_pdf(file_path: str) -> str:
     text = ""
@@ -24,6 +25,7 @@ class ParamEvaluateCV:
     pdf_file: UploadFile
     user_email: Optional[str] = None
     train_prompt: Optional[str] = None
+    evaluation_schema: Optional[str] = None
 
 async def evaluate_cv(payload: ParamEvaluateCV, background_tasks: BackgroundTasks) -> dict:
     tmp_path = None
@@ -39,15 +41,17 @@ async def evaluate_cv(payload: ParamEvaluateCV, background_tasks: BackgroundTask
 
         evaluator = CVEvaluator()
         if payload.train_prompt:
-            evaluator.set_prompt("train")
+            evaluator.set_prompt("train", payload.evaluation_schema)
             result = evaluator.train(ParamAgentCVEvaluatorTrain(train_prompt=payload.train_prompt))
         else:
-            evaluator.set_prompt("")
+            evaluator.set_prompt("", payload.evaluation_schema)
             result = evaluator.evaluate(ParamAgentCVEvaluatorEvaluate(cv_text=extracted_pdf))
 
         background_tasks.add_task(background_delay)
 
-        if "YES" in result.upper():
+        print(result)
+
+        if "YES" in result.upper() or ("SCORE:" in result.upper() and  to_score_result(result) > 75) :
             return {"status": "passed", "result": result}
         else:
             return {"status": "rejected", "result": result}
@@ -73,6 +77,13 @@ async def background_delay():
     print("⏳ Start background task...")
     await asyncio.sleep(1)
     print("✅ Finished after 1 second.")
+
+
+def to_score_result(result: str) -> int:
+    upper_result = result.upper()
+    score_match = re.search(r"SCORE:\s*(\d+)", upper_result)
+    score = int(score_match.group(1)) if score_match else 0
+    return score
 
 
 dataset = [
